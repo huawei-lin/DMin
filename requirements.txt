@@ -1,0 +1,10 @@
+diffusers
+sentencepiece
+accelerate
+transformers
+imgcat
+matplotlib
+protobuf
+datasets
+peft
+wandb

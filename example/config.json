@@ -1,0 +1,28 @@
+{
+    "stage": "caching",
+    "data": {
+        "train_data_path": "./mixed_dataset/train/mixed_dataset.parquet",
+        "test_data_path": "./test_data.jsonl",
+        "image_column": "image",
+        "prompt_column": "prompt",
+        "num_inference_steps": 28,
+        "num_estimate_steps": 5,
+        "height": 1024,
+        "width":1024 
+    },
+    "model": {
+        "model_name_or_path": "stabilityai/stable-diffusion-3-medium-diffusers"
+    },
+    "influence": {
+        "result_output_path": "output_dir",
+        "cache_path": "cache_dir",
+        "n_threads": 1,
+        "cpu_offload": true,
+        "seed": 42
+    },
+    "compression": {
+        "enable": true,
+        "save_original_grad": true,
+        "K": [4096, 65536, 1048576]
+    }
+}
