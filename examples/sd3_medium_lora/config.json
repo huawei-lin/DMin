@@ -11,7 +11,7 @@
     },
     "model": {
         "model_name_or_path": "stabilityai/stable-diffusion-3-medium-diffusers",
-	"lora_path": "huaweilin/DMin_sd3_medium_lora_r4"
+        "lora_path": "huaweilin/DMin_sd3_medium_lora_r4"
     },
     "influence": {
         "result_output_path": "output_dir",
