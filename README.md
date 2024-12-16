@@ -49,12 +49,16 @@ Caching stage: skip caching stage if you clone the caching repo seccessfully. Th
 python ../../main.py --config_path config.json --stage caching
 ```
 
-Retrieval stagl: This stage will calculate the influece score for each training data sample, and write the results to the `output_path` of the config.
+Retrieval stage: This stage will calculate the influece score for each training data sample, and write the results to the `output_path` of the config.
 ```
-python ../../main.py --config_path config.json --stage caching
+python ../../main.py --config_path config.json --stage retrieval
 ```
 
+**More information will be uploaded soon.**
+
 ## Example 2: Unconditional Diffusion Model (MNIST)
+
+**More information will be uploaded soon.**
 
 
 ## Citation
