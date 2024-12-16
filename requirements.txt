@@ -7,4 +7,6 @@ matplotlib
 protobuf
 datasets
 peft
+torchvision
+torch
 wandb

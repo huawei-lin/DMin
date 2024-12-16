@@ -1,0 +1,28 @@
+{
+    "data": {
+        "train_data_path": "huaweilin/DMin_mixed_datasets_8846",
+        "test_data_path": "./test_data.jsonl",
+        "image_column": "image",
+        "prompt_column": "prompt",
+        "num_inference_steps": 28,
+        "num_estimate_steps": 5,
+        "height": 1024,
+        "width":1024 
+    },
+    "model": {
+        "model_name_or_path": "stabilityai/stable-diffusion-3-medium-diffusers",
+	"lora_path": "huaweilin/DMin_sd3_medium_lora_r4"
+    },
+    "influence": {
+        "result_output_path": "output_dir",
+        "cache_path": "DMin_sd3_medium_lora_r4_caching_8846",
+        "n_threads": 1,
+        "cpu_offload": false,
+        "seed": 42
+    },
+    "compression": {
+        "enable": true,
+        "save_original_grad": false,
+        "K": 65536
+    }
+}

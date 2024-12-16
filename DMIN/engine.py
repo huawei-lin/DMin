@@ -54,7 +54,10 @@ def read_data(path):
                 dataset.append(json.loads(line.strip()))
         return dataset
     else:
-        raise Exception("Unspported data format.")
+        from datasets import load_dataset
+        dataset = load_dataset(path, split="train")
+        return dataset
+    # raise Exception("Unspported data format.")
 
 
 def MP_run_subprocess(
@@ -100,6 +103,7 @@ def MP_run_subprocess(
     test_loss_grad_compressed_list = []
     if stage == "retrieval" and config.data.test_data_path:
         if is_main_process:
+        # if True:
             with mp_engine.gpu_locks[rank].get_lock():
                 pipeline.to(rank)
                 non_image_index = []
@@ -175,14 +179,14 @@ def MP_run_subprocess(
             df_test_dataset[image_column] = df_test_dataset[image_column].apply(
                 image_to_bytes
             )
-            if image_ROI_column in df_test_dataset.columns:
-                df_test_dataset[image_ROI_column] = df_test_dataset[
-                    image_ROI_column
-                ].apply(image_to_bytes)
-            df_test_dataset.to_parquet(
-                f"{config.influence.result_output_path}/test_dataset.parquet",
-                index=False,
-            )
+#             if image_ROI_column in df_test_dataset.columns:
+#                 df_test_dataset[image_ROI_column] = df_test_dataset[
+#                     image_ROI_column
+#                 ].apply(image_to_bytes)
+#             df_test_dataset.to_parquet(
+#                 f"{config.influence.result_output_path}/test_dataset.parquet",
+#                 index=False,
+#             )
 
             for i in range(mp_engine.num_processing):
                 if save_original_grad == True and dim_reducer is None:
@@ -209,7 +213,9 @@ def MP_run_subprocess(
                             ],
                         )
                     )
+            print(f"{process_id}: test_grad sent")
         else:
+            print(f"{process_id}: waiting for test_grad")
             test_loss_grad_list, test_loss_grad_compressed_list = mp_engine.pipe_list[
                 process_id
             ][1].recv()
@@ -218,14 +224,27 @@ def MP_run_subprocess(
                 [x.to(rank) for x in sub_test_loss_grad_compressed_list]
                 for sub_test_loss_grad_compressed_list in test_loss_grad_compressed_list
             ]
+            print(f"{process_id}: test_grad obtained")
 
-    train_dataset_size = len(train_dataset)
-    test_dataset_size = len(test_loss_grad_list)
+    train_dataset_size = 0
+    test_dataset_size = 0
     if is_main_process:
+        train_dataset_size = len(train_dataset)
+        test_dataset_size = len(test_dataset)
         with mp_engine.train_dataset_size.get_lock():
             mp_engine.train_dataset_size.value = train_dataset_size
         with mp_engine.test_dataset_size.get_lock():
             mp_engine.test_dataset_size.value = test_dataset_size
+
+        if stage == "retrieval" and config.data.test_data_path:
+            mp_engine.pipe_test_dataset_content[0].send(df_test_dataset)
+    else:
+        while train_dataset_size == 0:
+            with mp_engine.train_dataset_size.get_lock():
+                train_dataset_size = mp_engine.train_dataset_size.value
+            with mp_engine.test_dataset_size.get_lock():
+                test_dataset_size = mp_engine.test_dataset_size.value
+            time.sleep(0.02)
 
     def check_files_exits(idx):
         if save_original_grad and dim_reducer is None:
@@ -347,13 +366,20 @@ def MP_run_subprocess(
 
             if save_original_grad:
                 loss_grad = postprocess(loss_grad)
-            for test_id, test_loss_grad in enumerate(test_loss_grad_list):
-                if save_original_grad:
-                    influence_list = (test_loss_grad * loss_grad).sum(dim=-1)
-                    influence_mean = influence_list.mean()
 
-                compressed_influence_list = []
+            for test_id in range(test_dataset_size):
+                influence_mean = None
+                influence_list = None
+                compressed_influence_list = None
+
+                if save_original_grad:
+                    test_loss_grad = test_loss_grad_list[test_id]
+                    influence_list = (test_loss_grad * loss_grad).sum(dim=-1)
+                    influence_mean = influence_list.mean().cpu().item()
+                    influence_list = influence_list.cpu().tolist()
+
                 if dim_reducer:
+                    compressed_influence_list = []
                     for i, (
                         test_loss_grad_compressed,
                         loss_grad_compressed,
@@ -375,15 +401,14 @@ def MP_run_subprocess(
                     InfluenceEstimationOutput(
                         test_id=test_id,
                         idx=idx,
-                        influence_list=influence_list.cpu().tolist(),
-                        influence_mean=influence_mean.cpu().item(),
+                        influence_list=influence_list,
+                        influence_mean=influence_mean,
                         compressed_influence_list=compressed_influence_list,
                         K=K,
                     ),
                     block=True,
                     timeout=None,
                 )
-
         except Exception as e:
             with mp_engine.finished_idx.get_lock():
                 mp_engine.finished_idx[idx] = False
@@ -392,7 +417,6 @@ def MP_run_subprocess(
 
 
 def MP_run_get_result(config, mp_engine, stage="caching"):
-    mp_engine.start_barrier.wait()
     train_dataset_size = 0
 
     while train_dataset_size == 0:
@@ -408,6 +432,11 @@ def MP_run_get_result(config, mp_engine, stage="caching"):
 
     save_handler_list = []
     if stage == "retrieval":
+        df_test_dataset = mp_engine.pipe_test_dataset_content[1].recv()
+        df_test_dataset.to_parquet(
+            f"{config.influence.result_output_path}/test_dataset.parquet",
+            index=False,
+        )
         for test_id in range(test_dataset_size):
             save_handler_list.append(
                 open(
@@ -415,6 +444,8 @@ def MP_run_get_result(config, mp_engine, stage="caching"):
                     "w",
                 )
             )
+
+    mp_engine.start_barrier.wait()
 
     i = 0
     # while True:
@@ -430,7 +461,7 @@ def MP_run_get_result(config, mp_engine, stage="caching"):
             continue
 
         result_dict = asdict(result_item)
-        save_handler_list[result_dict["test_id"]].write(json.dumps(result_dict) + "\n")
+        save_handler_list[int(result_dict["test_id"])].write(json.dumps(result_dict) + "\n")
 
     for handler in save_handler_list:
         handler.close()
@@ -443,6 +474,7 @@ class MPEngine:
         self.train_idx = Value(c_int, 0)
 
         self.pipe_list = [Pipe() for _ in range(num_processing)]
+        self.pipe_test_dataset_content = Pipe()
         self.num_processing = num_processing
         self.multi_k_save_path_list = None
 

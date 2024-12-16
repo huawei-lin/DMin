@@ -74,7 +74,7 @@ def sanity_check(config):
         )
 
 
-def get_config(config_path):
+def get_config(config_path, stage):
     """Returns a  config file"""
 
     def update(d, u):
@@ -88,6 +88,8 @@ def get_config(config_path):
     config = get_default_config()
     config = update(config, json.load(open(config_path)))
     config = Struct(config)
+    if stage is not None:
+        config.stage = stage
     sanity_check(config)
     return config
 
@@ -150,8 +152,13 @@ def print_mem(msg=None):
     print("=" * 50)
 
 
-def bytes_to_image(byte_data):
-    return Image.open(io.BytesIO(byte_data)).convert("RGB")
+def bytes_to_image(img_data):
+    if isinstance(img_data, bytes):
+        return Image.open(io.BytesIO(img_data)).convert("RGB")
+    elif isinstance(img_data, Image.Image):
+        return img_data
+    else:
+        raise ValueError("Unsupported image format: expected PIL.Image or bytes.")
 
 
 def image_to_bytes(img):

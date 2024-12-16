@@ -19,10 +19,11 @@ CONFIG_PATH = "./config.json"
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_path", default=CONFIG_PATH, type=str)
+    parser.add_argument("--stage", default=None, type=str)
     args = parser.parse_args()
     config_path = args.config_path
 
-    config = get_config(config_path)
+    config = get_config(config_path, args.stage)
     print(config)
 
     random.seed(int(config.influence.seed))
