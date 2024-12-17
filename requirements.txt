@@ -10,3 +10,4 @@ peft
 torchvision
 torch
 wandb
+hnswlib

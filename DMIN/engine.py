@@ -43,7 +43,6 @@ class InfluenceEstimationOutput:
 def postprocess(loss_grad):
     return normalize(loss_grad)
 
-
 def read_data(path):
     if "parquet" in path:
         return pd.read_parquet(path).to_dict("records")
@@ -292,9 +291,7 @@ def MP_run_subprocess(
             if (
                 stage == "retrieval"
                 and cache_path is not None
-                and
-                # os.path.exists(f"{cache_path}/loss_grad_{idx:08d}.pt")
-                check_files_exits(idx)
+                and check_files_exits(idx)
             ):
                 if save_original_grad:
                     loss_grad = torch.load(
@@ -324,7 +321,7 @@ def MP_run_subprocess(
                 prompt = item[prompt_column]
                 image = None
                 if image_column in item.keys():
-                    image = bytes_to_image(item[image_column])
+                    image = bytes_to_image(item[image_column]).convert("RGB")
                 else:
                     image = pipeline(
                         prompt, num_inference_steps=num_inference_steps
@@ -349,7 +346,8 @@ def MP_run_subprocess(
                     torch.save(loss_grad, f"{cache_path}/loss_grad_{idx:08d}.pt")
 
                 if dim_reducer is not None:
-                    loss_grad_compressed_list = dim_reducer(postprocess(loss_grad), K)
+                    postprocessed_loss_grad = postprocess(loss_grad)
+                    loss_grad_compressed_list = dim_reducer(postprocessed_loss_grad, K)
                     for i, (path, k) in enumerate(
                         zip(mp_engine.multi_k_save_path_list, K)
                     ):
@@ -392,9 +390,7 @@ def MP_run_subprocess(
                         )
                     ):
                         compressed_influence_list.append(
-                            (test_loss_grad_compressed * loss_grad_compressed)
-                            .sum(dim=-1)
-                            .tolist()
+                            (test_loss_grad_compressed * loss_grad_compressed).sum().cpu().item()
                         )
 
                 mp_engine.result_q.put(

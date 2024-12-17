@@ -27,7 +27,7 @@ pip install -r requirements.txt
 
 Once you have a config file, you can run:
 ```
-python MP_main.py --config='config.json'
+python MP_main.py --config='config.json' --stage {caching/retrieval}
 ```
 
 We also provide two examples in `./examples`, including 1) stabale diffusion with LoRA and 2) unconditional diffusion model on MNIST.
@@ -53,6 +53,10 @@ Retrieval stage: This stage will calculate the influece score for each training 
 ```
 python ../../main.py --config_path config.json --stage retrieval
 ```
+
+After retrieval stage, you can visualize the result by `visual_infl.ipynb`. For KNN, we also provide the hsnw index in [huaweilin/DMin_sd3_medium_lora_r4_caching_8846](https://huggingface.co/datasets/huaweilin/DMin_sd3_medium_lora_r4_caching_8846). Since the retrieval stage will save the compressed gradient vectors for test data samples, you can do retrieval through the index after retrieval stage by `visual_knn.ipynb`.
+
+For the jsonl file of the test data samples, you can also include the image as `{"prompt": "xxx", "image": "path/to/the/image"}`.
 
 **More information will be uploaded soon.**
 

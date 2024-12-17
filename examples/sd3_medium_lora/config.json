@@ -5,7 +5,7 @@
         "image_column": "image",
         "prompt_column": "prompt",
         "num_inference_steps": 28,
-        "num_estimate_steps": 5,
+        "num_estimate_steps": 10,
         "height": 1024,
         "width": 1024 
     },

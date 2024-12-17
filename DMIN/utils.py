@@ -74,7 +74,7 @@ def sanity_check(config):
         )
 
 
-def get_config(config_path, stage):
+def get_config(config_path, stage=None):
     """Returns a  config file"""
 
     def update(d, u):

@@ -47,8 +47,8 @@ class DimReducer:
             step = self.D // k
             vec_list.append(torch.sum(vec.reshape((vec.shape[0], -1, step)), axis=-1))
 
-        if len(vec_list) == 1:
-            return vec_list[0]
+#         if len(vec_list) == 1:
+#             return vec_list[0]
         return vec_list
 
     def init(self, D):
