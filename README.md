@@ -58,9 +58,6 @@ After retrieval stage, you can visualize the result by `visual_infl.ipynb`. For 
 
 For the jsonl file of the test data samples, you can also include the image as `{"prompt": "xxx", "image": "path/to/the/image"}`.
 
-## Example 2: Unconditional Diffusion Model (MNIST)
-
-**More information will be uploaded soon.**
 
 
 ## Citation
